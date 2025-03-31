@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>현대중공업 선장설계부 AI 선주 회신 프로그램</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>🚢 현대중공업 선장설계부<br>AI 선주 회신 프로그램</h1>
+    </header>
+    <main>
+        <section class="upload-section">
+            <div id="drop-area" class="drop-area">
+                <p>📁 Excel 파일을 드래그하거나 클릭하여 업로드하세요.</p>
+                <input type="file" id="file-input" name="file" accept=".xlsx" hidden>
+            </div>
+            <button id="upload-btn" class="upload-btn">🚀 AI 회신 작성하기</button>
+
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <progress id="progress-bar" value="0" max="100"></progress>
+                <span id="progress-text">0%</span>
+            </div>
+        </section>
+    </main>
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('highlight');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('highlight');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('highlight');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                dropArea.querySelector('p').textContent = `✅ 선택된 파일: ${files[0].name}`;
+            }
+        });
+
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                dropArea.querySelector('p').textContent = `✅ 선택된 파일: ${fileInput.files[0].name}`;
+            }
+        });
+
+        uploadBtn.addEventListener('click', () => {
+            if (!fileInput.files.length) {
+                alert('파일을 먼저 선택하세요.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload');
+
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            xhr.upload.addEventListener('loadstart', () => {
+                progressContainer.style.display = 'block';
+                progressBar.value = 0;
+                progressText.textContent = '0%';
+            });
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.value = percentComplete;
+                    progressText.textContent = percentComplete + '%';
+                }
+            });
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    document.open();
+                    document.write(xhr.responseText);
+                    document.close();
+                } else {
+                    alert('업로드 실패!');
+                }
+            };
+
+            xhr.onerror = () => alert('업로드 중 오류 발생!');
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 회신 결과</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>📨 AI 회신 결과</h1>
+    </header>
+    <main>
+        <section class="result-section">
+            <h2>📋 문의 처리 결과</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>문의 ID</th>
+                        <th>항목 번호</th>
+                        <th>회사</th>
+                        <th>담당자</th>
+                        <th>상태</th>
+                        <th>문의 내용</th>
+                        <th>회신 초안</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr data-id="{{ item.id }}">
+                        <td>{{ item.id }}</td>
+                        <td><input type="text" class="editable" name="item_no" value="{{ item.item_no }}"></td>
+                        <td><input type="text" class="editable" name="company" value="{{ item.company }}"></td>
+                        <td><input type="text" class="editable" name="name" value="{{ item.name }}"></td>
+                        <td><input type="text" class="editable" name="status" value="{{ item.status }}"></td>
+                        <td><input type="text" class="editable" name="inquiry" value="{{ item.inquiry }}"></td>
+                        <td><input type="text" class="editable" name="response" value="{{ item.response }}"></td>
+                        <td><button class="save-btn">💾 저장</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="button-container">
+                <a href="{{ url_for('download_pcf', filename=filename) }}" class="download-btn">📥 PCF 다운로드</a>
+            </div>
+        </section>
+    </main>
+    <script>
+        document.querySelectorAll('.save-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const id = row.getAttribute('data-id');
+                const data = {
+                    id: id,
+                    item_no: row.querySelector('input[name="item_no"]').value,
+                    company: row.querySelector('input[name="company"]').value,
+                    name: row.querySelector('input[name="name"]').value,
+                    status: row.querySelector('input[name="status"]').value,
+                    inquiry: row.querySelector('input[name="inquiry"]').value,
+                    response: row.querySelector('input[name="response"]').value,
+                    status_for_sort: row.querySelector('input[name="status"]').value
+                };
+
+                fetch('/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        alert('✅ 저장 완료!');
+                    } else {
+                        alert('❌ 저장 실패: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    alert('오류 발생: ' + error);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
