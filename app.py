@@ -1,8 +1,10 @@
 import os
 import pandas as pd
-from flask import Flask, request, render_template, send_file, jsonify, session, redirect, url_for
+import bcrypt
+from flask import Flask, request, render_template, send_file, jsonify, session, redirect, url_for, redirect, flash
 from ai_model import generate_response
-from db_manager import init_db, save_to_db, update_db, bulk_update_data
+from db_manager import init_db, save_to_db, update_db, bulk_update_data,create_user,check_user
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -11,9 +13,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 init_db()
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html')
+    if 'user_id' not in session:
+        return render_template('login.html')  # 로그인 안 한 경우 로그인 창
+    return render_template('index.html')      # 로그인한 경우 index.html 진입
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -84,6 +88,56 @@ def download_pcf(filename):
     df.to_excel(pcf_path, index=False)
     return send_file(pcf_path, as_attachment=True, download_name='pcf_output.xlsx')
 
+
+# app.py 내부에 추가할 코드
+
+# 회원가입 라우트
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        try:
+            create_user(username, hashed)
+            flash('회원가입 완료. 로그인해주세요.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash('이미 존재하는 사용자입니다.', 'danger')
+    return render_template('register.html')
+
+# 로그인 라우트
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = check_user(username)
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            flash('로그인 성공!', 'success')
+            return redirect(url_for('index'))  # ✅ 여기서 dashboard → index 로 변경
+        flash('아이디 또는 비밀번호가 틀립니다.', 'danger')
+    return render_template('login.html')
+
+# 로그아웃
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('로그아웃 되었습니다.', 'info')
+    return redirect(url_for('login'))
+
+# 예시 대시보드 (로그인 필요)
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return f"<h2>안녕하세요, {session['username']}님!</h2><p><a href='/logout'>로그아웃</a></p>"
+
+
+
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)

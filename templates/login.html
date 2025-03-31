@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 - AI 회신 프로그램</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>🔐 로그인 - 현대중공업 AI 선주 회신 프로그램</h1>
+    </header>
+    <main>
+        <section class="upload-section">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <form method="POST">
+                <label>아이디:<br><input type="text" name="username" required></label><br><br>
+                <label>비밀번호:<br><input type="password" name="password" required></label><br><br>
+                <button class="upload-btn" type="submit">🔓 로그인</button>
+            </form>
+            <p style="margin-top: 20px;">계정이 없으신가요? <a href="{{ url_for('register') }}">회원가입</a></p>
+        </section>
+    </main>
+</body>
+</html>
